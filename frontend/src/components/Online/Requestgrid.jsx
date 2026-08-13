@@ -52,11 +52,8 @@ function AppCard({ item, accent }) {
   // ลำดับความสำคัญ: รูปที่อัปโหลดผ่านแอดมิน > ไฟล์ในโฟลเดอร์ assets/logos > ตัวอักษรย่อ
   const logoUrl = item.img || LOGOS[slugify(item.name)]
 
-  return (
-    <button
-      data-card
-      className="group flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white p-5 text-center transition-colors hover:border-gray-300 hover:bg-gray-50"
-    >
+  const cardContent = (
+    <>
       {/* กรอบเดียวกันทุกแบบ: รูปโลโก้ / ไอคอน / ตัวอักษรย่อ ใช้ w-full flex-1 + p-3 เท่ากันหมด
           เพื่อให้ "พื้นที่มองเห็น" เท่ากันเป๊ะ ไม่ว่าเนื้อหาข้างในจะเป็นรูปที่มีขอบขาวเยอะ-น้อยแค่ไหน
           หรือเป็นไอคอน/ตัวอักษรที่ไม่มีขอบขาวเลยก็ตาม */}
@@ -82,6 +79,27 @@ function AppCard({ item, accent }) {
       <span className="line-clamp-2 text-[12.5px] font-medium leading-snug text-gray-800">
         {item.name}
       </span>
+    </>
+  )
+
+  const cardClasses =
+    'group flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white p-5 text-center transition-colors hover:border-gray-300 hover:bg-gray-50'
+
+  // มีลิงก์ (item.href) -> เปิดแท็บใหม่
+  // ไม่มี -> ปุ่มเฉยๆ กดไม่ได้ (กันพัง เผื่อยังไม่ได้กรอก href ในแผงควบคุม)
+  return item.href ? (
+    <a
+      data-card
+      href={item.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`${cardClasses} no-underline`}
+    >
+      {cardContent}
+    </a>
+  ) : (
+    <button data-card className={cardClasses} disabled>
+      {cardContent}
     </button>
   )
 }

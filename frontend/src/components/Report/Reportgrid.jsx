@@ -23,7 +23,8 @@ export function ReportGrid() {
         {REPORTS.map((r) => (
           <a
             key={r.id}
-            href="#"
+            href={r.href || '#'}
+            {...(r.href && { target: '_blank', rel: 'noopener noreferrer' })}
             className="group flex w-[150px] flex-col items-center gap-3.5 no-underline"
           >
             <div

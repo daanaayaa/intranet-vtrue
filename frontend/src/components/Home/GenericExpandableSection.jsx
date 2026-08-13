@@ -1,9 +1,27 @@
 import { useState } from 'react'
 import { guessIcon } from '../../utils/guessIcon'
 
+// แปลง URL ของไฟล์ที่อัปโหลดให้เปิดจาก Frontend ได้ (relative path จาก backend -> absolute)
+// รูปแบบเดียวกับ getFileUrl ใน Announcement.jsx / CollectionEditor.jsx / OnCall.jsx
+function getFileUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+
+  const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`
+  return `${API_URL}${url}`
+}
+
+// แต่ละ item อาจมี "href" (ลิงก์ภายนอก) หรือ "file" (ไฟล์ที่อัปโหลด เช่น jpg/pdf) อย่างใดอย่างหนึ่ง
+// href มาก่อนถ้ามีทั้งคู่ — เหมือน resolveLink ใน Announcement.jsx
+function resolveLink(item) {
+  if (item?.href) return item.href
+  if (item?.file?.url) return getFileUrl(item.file.url)
+  return null
+}
+
 // Section แบบการ์ดพับ/กางเดียว ใช้กับ custom sections ที่เลือกเทมเพลต "expandable"
 // section.sub: คำอธิบายรองใต้ชื่อ (เช่น "กลุ่ม 6")
-// item แต่ละอัน: { text, icon, href }
+// item แต่ละอัน: { text, icon, href, file }
 export function GenericExpandableSection({ section }) {
   const [open, setOpen] = useState(false)
   const items = section.items || []
@@ -34,6 +52,7 @@ export function GenericExpandableSection({ section }) {
       <div className={`mt-2.5 border-t border-line pt-2.5 ${open ? 'block' : 'hidden'}`}>
         {items.map((item, i) => {
           const icon = item.icon || guessIcon(item.text)
+          const link = resolveLink(item)
           const content = (
             <>
               <i className="text-[13px] text-blue-600" style={{ color: section.color }}>
@@ -42,10 +61,13 @@ export function GenericExpandableSection({ section }) {
               {item.text}
             </>
           )
-          return item.href ? (
+          // มีลิงก์ (href หรือไฟล์แนบ เช่น PDF/JPG) -> คลิกได้ เปิดแท็บใหม่
+          return link ? (
             <a
               key={i}
-              href={item.href}
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-2 border-b border-line py-2 text-[11px] no-underline last:border-b-0"
             >

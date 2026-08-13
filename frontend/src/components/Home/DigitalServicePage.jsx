@@ -1,5 +1,23 @@
 import { useState, useEffect } from 'react'
 
+// แปลง URL ของไฟล์ที่อัปโหลดให้เปิดจาก Frontend ได้ (relative path จาก backend -> absolute)
+// รูปแบบเดียวกับ getFileUrl ใน Announcement.jsx / CollectionEditor.jsx / OnCall.jsx
+function getFileUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+
+  const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`
+  return `${API_URL}${url}`
+}
+
+// แต่ละรายการอาจมี "href" (ลิงก์ภายนอก) หรือ "file" (ไฟล์ที่อัปโหลด เช่น jpg/pdf) อย่างใดอย่างหนึ่ง
+// href มาก่อนถ้ามีทั้งคู่ — เหมือน resolveLink ใน Announcement.jsx
+function resolveLink(item) {
+  if (item?.href) return item.href
+  if (item?.file?.url) return getFileUrl(item.file.url)
+  return null
+}
+
 export function DigitalServicePage({ service, onBack }) {
   const hasGroups = service?.groups && service.groups.length > 0
   const hasTree = service?.tree && service.tree.length > 0
@@ -78,9 +96,17 @@ export function DigitalServicePage({ service, onBack }) {
               <span className="mt-2.5 block text-[13px] font-medium leading-tight text-ink-soft">{g.title}</span>
             )
 
-            if (g.href) {
+            // กลุ่มมีลิงก์/ไฟล์ตรงตัว (href หรือ file) -> เปิดแท็บใหม่ทันที ไม่ต้องเข้าไปดูลิสต์ย่อย
+            const groupLink = resolveLink(g)
+            if (groupLink) {
               return (
-                <a key={g.title} href={g.href} className="flex w-[130px] flex-col items-center text-center no-underline">
+                <a
+                  key={g.title}
+                  href={groupLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-[130px] flex-col items-center text-center no-underline"
+                >
                   {circle}
                   {labelEl}
                 </a>
@@ -105,19 +131,23 @@ export function DigitalServicePage({ service, onBack }) {
       {/* หน้าลิสต์ของกลุ่มที่เลือก — บังคับ 2 คอลัมน์เท่ากันเสมอด้วย grid-cols-2 */}
       {hasGroups && selectedGroup && (
         <div className="grid grid-cols-2 gap-3 max-[700px]:grid-cols-1">
-          {selectedGroup.items?.map((item, i) => (
-            <a
-              key={i}
-              href={item.href || '#'}
-              className="flex w-full items-center gap-3 rounded-lg border border-line bg-white px-4 py-3.5 no-underline transition-colors hover:border-blue-500/40 hover:bg-blue-tint"
-            >
-              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-tint">
-                <i className={`ti ${item.icon || 'ti-file-text'} text-base text-blue-600`} />
-              </div>
-              <span className="flex-1 text-[13px] leading-tight text-ink">{item.label}</span>
-              <i className="ti ti-chevron-right flex-shrink-0 text-sm text-ink-soft/60" />
-            </a>
-          ))}
+          {selectedGroup.items?.map((item, i) => {
+            const link = resolveLink(item)
+            return (
+              <a
+                key={i}
+                href={link || '#'}
+                {...(link && { target: '_blank', rel: 'noopener noreferrer' })}
+                className="flex w-full items-center gap-3 rounded-lg border border-line bg-white px-4 py-3.5 no-underline transition-colors hover:border-blue-500/40 hover:bg-blue-tint"
+              >
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-tint">
+                  <i className={`ti ${item.icon || 'ti-file-text'} text-base text-blue-600`} />
+                </div>
+                <span className="flex-1 text-[13px] leading-tight text-ink">{item.label}</span>
+                <i className="ti ti-chevron-right flex-shrink-0 text-sm text-ink-soft/60" />
+              </a>
+            )
+          })}
           {!selectedGroup.items?.length && (
             <p className="col-span-full py-6 text-center text-[13px] text-ink-soft">ยังไม่มีรายการในหัวข้อนี้</p>
           )}
@@ -165,10 +195,12 @@ export function DigitalServicePage({ service, onBack }) {
                   </button>
                 )
               }
+              const link = resolveLink(node)
               return (
                 <a
                   key={i}
-                  href={node.href || '#'}
+                  href={link || '#'}
+                  {...(link && { target: '_blank', rel: 'noopener noreferrer' })}
                   className="flex w-full items-center gap-3 rounded-lg border border-line bg-white px-4 py-3.5 no-underline transition-colors hover:border-blue-500/40 hover:bg-blue-tint"
                 >
                   <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-tint">

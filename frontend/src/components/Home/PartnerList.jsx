@@ -1,26 +1,46 @@
 import { useState } from 'react'
 import { useContent } from '../../context/ContentContext'
 
+// แปลง URL ของไฟล์ที่อัปโหลดให้เปิดจาก Frontend ได้ (relative path จาก backend -> absolute)
+// รูปแบบเดียวกับ getFileUrl ใน Announcement.jsx / CollectionEditor.jsx / OnCall.jsx
+function getFileUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+
+  const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`
+  return `${API_URL}${url}`
+}
+
+// รับค่าที่เป็นได้ทั้ง href (string URL) หรือ file (object { id, name, url, size } จาก uploader)
+// href มาก่อนถ้ามีทั้งคู่ — เหมือน resolveLink ใน Announcement.jsx
+function resolveLink(href, file) {
+  if (href) return href
+  if (file?.url) return getFileUrl(file.url)
+  return null
+}
+
 export function buildDocs(item) {
   const candidates = [
-    { key: 'detail', label: 'รายละเอียด', href: item.detailHref, file: item.detailFile },
-    { key: 'contract', label: 'เอกสารสัญญา', href: item.contractHref, file: item.contractFile },
-    { key: 'signature', label: 'ลายเซ็นผู้มีอำนาจส่งตัว', href: item.signatureHref, file: item.signatureFile },
+    { label: 'รายละเอียด', href: item.detailHref, file: item.detailFile },
+    { label: 'เอกสารสัญญา', href: item.contractHref, file: item.contractFile },
+    { label: 'เอกสารแนบท้ายสัญญา', href: item.attachmentHref, file: item.attachmentFile },
+    { label: 'ลายเซ็นผู้มีอำนาจส่งตัว', href: item.signatureHref, file: item.signatureFile },
   ]
   const docs = candidates
-    .map((d) => ({ label: d.label, link: d.href || d.file }))
+    .map((d) => ({ label: d.label, link: resolveLink(d.href, d.file) }))
     .filter((d) => d.link)
 
   // รองรับข้อมูลเก่าที่มีแค่ href/file เดี่ยวๆ (ไม่มี 4 ประเภทเอกสารแยก)
-  if (docs.length === 0 && (item.href || item.file)) {
-    docs.push({ label: 'ลิงก์', link: item.href || item.file })
+  if (docs.length === 0) {
+    const link = resolveLink(item.href, item.file)
+    if (link) docs.push({ label: 'ลิงก์', link })
   }
 
   // รองรับ item.docs = [{ label, href, file }] แบบจำนวนไม่คงที่
   // (ใช้กับรายการที่แต่ละบริษัทมีเอกสารไม่เท่ากัน เช่น รายชื่อตรวจสุขภาพก่อนเข้าทำงาน)
   if (Array.isArray(item.docs)) {
     item.docs.forEach((d) => {
-      const link = d.href || d.file
+      const link = resolveLink(d.href, d.file)
       if (link) docs.push({ label: d.label, link })
     })
   }
@@ -48,11 +68,11 @@ export function PartnerList({ onOpenPartner }) {
         {visible.map((p) => {
           const subItems = p.subItems || []
           const hasSub = subItems.length > 0
-          const directLink = !hasSub && (p.href || p.file)
+          const directLink = !hasSub ? resolveLink(p.href, p.file) : null
 
           const handleClick = () => {
             if (hasSub) onOpenPartner?.(p)
-            else if (directLink) window.open(p.href || p.file, '_blank')
+            else if (directLink) window.open(directLink, '_blank', 'noopener,noreferrer')
           }
 
           return (

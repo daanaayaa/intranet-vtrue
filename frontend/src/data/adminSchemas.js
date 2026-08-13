@@ -5,21 +5,48 @@ export const ADMIN_SCHEMAS = [
       {
         key: 'ANN_NEWS',
         label: 'ข่าวประชาสัมพันธ์ (รายการทั้งหมด)',
-        description: 'รายการข่าวที่แสดงในลิสต์ด้านล่าง "ดูประกาศทั้งหมด" — ติ๊ก "ปักหมุดเป็น Banner" ที่ข่าวใดข่าวหนึ่ง เพื่อให้ข่าวนั้นแสดงเป็น Banner ใหญ่ด้านบนแทน — ถ้าใส่ "เมนูย่อย" ไว้ กดที่ข่าวนั้นในหน้าเว็บจะเจาะเข้าไปดูรายการย่อยแทนการเปิดลิงก์',
+        description:
+          'รายการข่าวที่แสดงในลิสต์ด้านล่าง "ดูประกาศทั้งหมด" — ติ๊ก "ปักหมุดเป็น Banner" ที่ข่าวใดข่าวหนึ่ง เพื่อให้ข่าวนั้นแสดงเป็น Banner ใหญ่ด้านบนแทน',
         type: 'list',
         itemLabel: (i) => i.title,
         fields: [
-          { key: 'title', label: 'หัวข้อข่าว', type: 'text' },
-          { key: 'sub', label: 'คำอธิบายย่อ', type: 'textarea' },
-          { key: 'img', label: 'รูปภาพ Banner (ใช้เมื่อปักหมุดข่าวนี้)', type: 'image' },
-          { key: 'badge', label: 'ป้ายข้อความมุมซ้ายบน (เช่น New) — เว้นว่างได้ถ้าไม่ต้องการ', type: 'text' },
-          { key: 'pinned', label: 'ปักหมุดเป็น Banner ใหญ่ด้านบน', type: 'boolean' },
-          { key: 'href', label: 'ลิงก์ (URL ภายนอก) — ใช้เมื่อไม่มีเมนูย่อยด้านล่าง', type: 'url' },
-          { key: 'file', label: 'หรือแนบไฟล์ PDF — ใช้เมื่อไม่มีเมนูย่อยด้านล่าง', type: 'file' },
           {
-            key: 'tree',
-            label: 'เมนูย่อย (ซ้อนได้หลายชั้น) — ใช้เมื่อข่าวนี้มีหัวข้อย่อยให้เจาะเข้าไปดู',
-            type: 'tree',
+            key: 'title',
+            label: 'หัวข้อข่าว',
+            type: 'text',
+          },
+          {
+            key: 'sub',
+            label: 'คำอธิบายย่อ',
+            type: 'textarea',
+          },
+          {
+            key: 'img',
+            label: 'รูปภาพ Banner (ใช้เมื่อปักหมุดข่าวนี้)',
+            type: 'image',
+            uploadFolder: 'marketing',
+          },
+          {
+            key: 'badge',
+            label:
+              'ป้ายข้อความมุมซ้ายบน (เช่น New) — เว้นว่างได้ถ้าไม่ต้องการ',
+            type: 'text',
+          },
+          {
+            key: 'pinned',
+            label: 'ปักหมุดเป็น Banner ใหญ่ด้านบน',
+            type: 'boolean',
+          },
+          {
+            key: 'href',
+            label: 'ลิงก์ (URL ภายนอก)',
+            type: 'url',
+          },
+          {
+            key: 'file',
+            label: 'หรือแนบไฟล์ PDF',
+            type: 'file',
+            uploadFolder: 'marketing',
           },
         ],
       },
@@ -332,7 +359,7 @@ export const ADMIN_SCHEMAS = [
         key: 'DIGITAL_SERVICES',
         label: 'Digital Services',
         description:
-          'ไอคอนบริการดิจิทัลทั้งหมด บางรายการมีเมนูย่อยแบบแท็บ (groups) หรือเมนูต้นไม้ซ้อนหลายชั้น (tree)',
+          'ไอคอนบริการดิจิทัลทั้งหมด บางรายการมีเมนูย่อยแบบแท็บ (groups) หรือเมนูต้นไม้ซ้อนหลายชั้น (tree) — ถ้าไม่มีเมนูย่อยเลย ให้ใส่ลิงก์/แนบไฟล์ตรงตัวได้เลย',
         type: 'list',
         itemLabel: (i) => i.label,
         fields: [
@@ -340,6 +367,20 @@ export const ADMIN_SCHEMAS = [
             key: 'label',
             label: 'ชื่อบริการ',
             type: 'text',
+          },
+
+          {
+            key: 'href',
+            label:
+              'ลิงก์ (URL) — ใช้เมื่อไม่มีเมนูย่อยด้านล่าง (groups/tree)',
+            type: 'url',
+          },
+          {
+            key: 'file',
+            label:
+              'หรือแนบไฟล์ PDF — ใช้เมื่อไม่มีเมนูย่อยด้านล่าง (groups/tree)',
+            type: 'file',
+            uploadFolder: 'med',
           },
 
           {
@@ -364,6 +405,19 @@ export const ADMIN_SCHEMAS = [
                 label:
                   'รูปโลโก้วงกลม (แนะนำ 200x200px ขึ้นไป)',
                 type: 'image',
+                uploadFolder: 'med',
+              },
+              {
+                key: 'href',
+                label:
+                  'ลิงก์ (URL) — ใช้เมื่อไม่มีรายการย่อยด้านล่าง',
+                type: 'url',
+              },
+              {
+                key: 'file',
+                label:
+                  'หรือแนบไฟล์ PDF — ใช้เมื่อไม่มีรายการย่อยด้านล่าง',
+                type: 'file',
                 uploadFolder: 'med',
               },
               {

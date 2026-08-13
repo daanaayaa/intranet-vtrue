@@ -194,17 +194,30 @@ function ImageFieldInput({ value, onChange }) {
 }
 
 // ============================================================
-// PDF / Image File Field (แนบไฟล์ทั่วไป — รองรับ PDF และรูปภาพ)
+// PDF / Image / Office File Field (แนบไฟล์ทั่วไป — รองรับ PDF, รูปภาพ, และเอกสาร Office)
 // ============================================================
 
 // รายชื่อประเภทไฟล์ที่อนุญาตสำหรับ field แบบ "file" (ใช้ร่วมกันทุก collection)
+// เพิ่ม PowerPoint / Word / Excel (ทั้งแบบใหม่ .xxxx และแบบเก่า .xxx) เข้ามาแล้ว
+// หมายเหตุ: ถ้าอัปโหลดแล้วยังโดนปฏิเสธอยู่ ให้เช็ค fileFilter ฝั่ง backend (multer) ด้วย
+// เพราะ backend อาจมี allowlist ของตัวเองแยกต่างหากจากฝั่ง frontend นี้
 const ALLOWED_FILE_TYPES = [
   'application/pdf',
   'image/jpeg',
   'image/png',
   'image/webp',
+  // PowerPoint
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+  'application/vnd.ms-powerpoint', // .ppt
+  // Word
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/msword', // .doc
+  // Excel
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/vnd.ms-excel', // .xls
 ]
-const ALLOWED_FILE_ACCEPT = 'application/pdf,image/jpeg,image/png,image/webp'
+const ALLOWED_FILE_ACCEPT =
+  '.pdf,.jpg,.jpeg,.png,.webp,.pptx,.ppt,.docx,.doc,.xlsx,.xls'
 
 function FileFieldInput({ value, onChange }) {
   const [error, setError] = useState('')
@@ -225,8 +238,17 @@ function FileFieldInput({ value, onChange }) {
       return
     }
 
-    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      setError('กรุณาเลือกไฟล์ PDF หรือรูปภาพ (JPG, PNG, WEBP) เท่านั้น')
+    // เบราว์เซอร์บางตัว/บางเวอร์ชันอ่าน mimetype ของไฟล์ Office เก่า (.doc/.xls/.ppt)
+    // ไม่ตรงมาตรฐาน หรือบางทีก็ส่งมาเป็นค่าว่าง — เผื่อไว้ด้วยการเช็คนามสกุลไฟล์เป็น fallback
+    const ext = '.' + (file.name.split('.').pop() || '').toLowerCase()
+    const allowedExts = ALLOWED_FILE_ACCEPT.split(',')
+    const isAllowed =
+      ALLOWED_FILE_TYPES.includes(file.type) || allowedExts.includes(ext)
+
+    if (!isAllowed) {
+      setError(
+        'รองรับเฉพาะไฟล์ PDF, รูปภาพ (JPG/PNG/WEBP), PowerPoint, Word หรือ Excel เท่านั้น'
+      )
       return
     }
 
@@ -291,7 +313,7 @@ function FileFieldInput({ value, onChange }) {
           <FolderSelect value={selectedFolder} onChange={setSelectedFolder} />
 
           <label
-            className={`mt-2 flex items-center justify-center rounded-lg border border-dashed border-line bg-paper/30 px-4 py-6 text-[12px] text-ink-soft ${
+            className={`mt-2 flex items-center justify-center rounded-lg border border-dashed border-line bg-paper/30 px-4 py-6 text-center text-[12px] text-ink-soft ${
               selectedFolder
                 ? 'cursor-pointer hover:bg-paper'
                 : 'cursor-not-allowed opacity-50'
@@ -300,7 +322,7 @@ function FileFieldInput({ value, onChange }) {
             {uploading
               ? 'กำลังอัปโหลด...'
               : selectedFolder
-                ? 'เลือกไฟล์ PDF หรือรูปภาพ (JPG/PNG/WEBP)'
+                ? 'เลือกไฟล์ PDF, รูปภาพ, PowerPoint, Word หรือ Excel'
                 : 'กรุณาเลือกโฟลเดอร์ก่อน'}
 
             <input

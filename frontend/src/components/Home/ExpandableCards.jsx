@@ -26,13 +26,85 @@ export function ExpandableCards() {
   const [open, setOpen] = useState(null)
   const toggle = (key) => setOpen(open === key ? null : key)
 
-  // เลือก template จาก dropdown แล้วเปิดลิงก์/ไฟล์ในแท็บใหม่ทันที
-  const handleTemplateSelect = (e) => {
+  // เลือก template จาก dropdown แล้วให้ผู้ใช้เลือกเองว่าจะเซฟไฟล์ไว้ที่ไหน
+  // ใช้ File System Access API (showSaveFilePicker) ซึ่งจะเปิดหน้าต่าง "บันทึกเป็น" ของเครื่อง
+  // ให้เลือกโฟลเดอร์ปลายทางได้จริง — รองรับเฉพาะ Chrome/Edge (Chromium)
+  //
+  // สำคัญ: ต้องเรียก showSaveFilePicker() ทันทีเป็นบรรทัดแรกในนี้ ห้ามมี await ใดๆ (เช่น fetch)
+  // มาคั่นก่อน เพราะ browser ต้องเห็นว่าถูกเรียกจาก "user gesture" (การคลิก) สดๆ เท่านั้น
+  // ถ้ามี await คั่นก่อน แม้แค่ fetch เร็วๆ ก็ตาม browser จะถือว่า gesture หมดอายุแล้ว แล้ว
+  // throw error เงียบๆ (ไม่ใช่ AbortError) ซึ่งจะหลุดไป fallback ดาวน์โหลดอัตโนมัติทันทีโดยไม่ถาม
+  // (นี่คือสาเหตุที่ก่อนหน้านี้มันดาวน์โหลดเลยไม่ขึ้นหน้าต่างให้เลือก)
+  const handleTemplateSelect = async (e) => {
     const idx = e.target.value
     if (idx === '') return
-    const link = resolveLink(TEMPLATE_OPTIONS[idx])
-    if (link) window.open(link, '_blank', 'noopener,noreferrer')
+    const t = TEMPLATE_OPTIONS[idx]
+    const link = resolveLink(t)
     e.target.value = '' // รีเซ็ตกลับเป็น placeholder เผื่อเลือกซ้ำอันเดิมได้อีก
+    if (!link) return
+
+    const filename = t.file?.name || `${t.label}.pptx`
+    const ext = filename.split('.').pop()?.toLowerCase()
+    const mimeByExt = {
+      pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      ppt: 'application/vnd.ms-powerpoint',
+      pdf: 'application/pdf',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      doc: 'application/msword',
+      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      xls: 'application/vnd.ms-excel',
+    }
+
+    // เช็คว่าเบราว์เซอร์รองรับ API นี้ไหม (Chrome/Edge เท่านั้น) — ถ้าไม่รองรับข้ามไป fallback เลย
+    if (window.showSaveFilePicker) {
+      let handle
+      try {
+        // เรียกทันทีตรงนี้ ยังอยู่ในช่วง user gesture จากการคลิก dropdown
+        handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: mimeByExt[ext]
+            ? [{ description: 'ไฟล์เอกสาร', accept: { [mimeByExt[ext]]: [`.${ext}`] } }]
+            : undefined,
+        })
+      } catch (pickerErr) {
+        // ผู้ใช้กด "ยกเลิก" ในหน้าต่างเลือกโฟลเดอร์ -> จบเลย ไม่ต้อง fallback ดาวน์โหลดซ้ำ
+        if (pickerErr?.name === 'AbortError') return
+        // เหตุผลอื่น (เช่นเบราว์เซอร์ block การเรียก) ค่อย fallback ไปดาวน์โหลดแบบเดิมด้านล่าง
+        handle = null
+      }
+
+      if (handle) {
+        try {
+          const res = await fetch(link)
+          if (!res.ok) throw new Error('fetch failed')
+          const blob = await res.blob()
+          const writable = await handle.createWritable()
+          await writable.write(blob)
+          await writable.close()
+        } catch (writeErr) {
+          window.open(link, '_blank', 'noopener,noreferrer')
+        }
+        return
+      }
+    }
+
+    // Fallback: เบราว์เซอร์ไม่รองรับ showSaveFilePicker หรือเรียกไม่ได้
+    // -> ดาวน์โหลดเข้าโฟลเดอร์ดาวน์โหลดเริ่มต้นของเครื่องแทน
+    try {
+      const res = await fetch(link)
+      if (!res.ok) throw new Error('fetch failed')
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(blobUrl)
+    } catch (err) {
+      window.open(link, '_blank', 'noopener,noreferrer')
+    }
   }
 
   return (

@@ -22,9 +22,27 @@ export function NSystem() {
               </div>
               <h4 className="text-xs font-bold text-navy-900">{s.name}</h4>
               <p className="text-[9.5px] leading-[1.3] text-ink-soft">{s.desc}</p>
-              <button className="mt-[3px] flex items-center gap-1 rounded-[20px] border border-line bg-white px-3 py-[5px] text-[10px] font-bold text-blue-600">
-                <i className="ti ti-external-link" />เข้าระบบ
-              </button>
+              {/* ปุ่มเข้าระบบ — คลิกได้เฉพาะเมื่อมี URL (s.href) จาก Admin, เปิดแท็บใหม่เสมอ
+                  ถ้าไม่มี URL ให้แสดงปุ่มปกติแบบ disabled แทน ไม่ทำลาย layout เดิม */}
+              {s.href ? (
+                <a
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-[3px] flex items-center gap-1 rounded-[20px] border border-line bg-white px-3 py-[5px] text-[10px] font-bold text-blue-600 no-underline"
+                >
+                  <i className="ti ti-external-link" />เข้าระบบ
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  title="ยังไม่ได้ตั้งค่า URL ของระบบนี้"
+                  className="mt-[3px] flex cursor-not-allowed items-center gap-1 rounded-[20px] border border-line bg-white px-3 py-[5px] text-[10px] font-bold text-blue-600/40"
+                >
+                  <i className="ti ti-external-link" />เข้าระบบ
+                </button>
+              )}
             </div>
           ))}
         </div>
